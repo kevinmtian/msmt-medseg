@@ -63,6 +63,5 @@ After the training finished, you can run `gen_paper.py` to generate the running 
 Note that you also need to replace all occurences of the `<USERNAME>` token with your specified value properly in these codes.
 
 ## Contact the author
-Should there be any questions, please contact the author directly at the email address provided in the submission system.
-
+Should there be any questions, please contact the author directly at the kevinmtian@gmail.com
 
