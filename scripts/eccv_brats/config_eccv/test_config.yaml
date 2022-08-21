@@ -1,0 +1,85 @@
+# Sample configuration file for training a 3D U-Net on a task of predicting the nuclei in 3D stack from the lightsheet
+# microscope. Training done with Binary Cross-Entropy.
+# Training and validation data can be downloaded from: https://osf.io/thxzn/
+
+# parameters that controls the task
+# use a fixed random seed to guarantee that when you run the code twice you will get the same outcome
+manual_seed: 0
+# model configuration
+model:
+  # model class, e.g. UNet3D, ResidualUNet3D
+  name: VNet3D
+
+  # number of input channels to the model
+  in_channels: 1
+  # number of output channels
+  out_channels: 1
+  # apply element-wise nn.Sigmoid after the final 1x1 convolution, otherwise apply nn.Softmax
+  # this is only relevant during inference, during training the network outputs logits and it is up to the loss function
+  # to normalize with Sigmoid or Softmax
+  final_sigmoid: true
+  # if True applies the final normalization layer (sigmoid or softmax), otherwise the networks returns the output from the final convolution layer; use False for regression problems, e.g. de-noising
+  is_segmentation: true
+
+# loss function configuration
+loss:
+  # use BCE loss for training
+  name: WeightedBCEWithLogitsLoss
+
+# evaluation metric
+eval_metric:
+  # use dice coefficient
+  name: DiceCoefficient
+
+# predictor configuration
+predictor:
+  # standard in memory predictor
+  name: 'StandardPredictor'
+
+# data loaders configuration
+loaders:
+  # class of the nrrd dataset, currently StandardHippoDataset and LazyHippoDataset are supported.
+  # When using LazyHippoDataset make sure to set `num_workers = 1`, due to a bug in nrrd which corrupts the data
+  # when reading from multiple threads.
+  dataset: StandardHippoDataset
+  # batch dimension; if number of GPUs is N > 1, then a batch_size of N * batch_size will automatically be taken for DataParallel
+  batch_size: 32
+  # how many subprocesses to use for data loading
+  num_workers: 8
+
+  # test loaders configuration  
+  test:    
+    # # SliceBuilder configuration, i.e. how to iterate over the input volume patch-by-patch
+    # # Slice builder for testing with sliding window patches
+    
+    slice_builder:
+      name: SliceBuilder
+      # train patch size given to the network (adapt to fit in your GPU mem, generally the bigger patch the better)
+      # patch_shape: [80, 170, 170]
+      # patch_shape: [64, 64, 64]
+
+      # cropped
+      patch_shape: [30, 55, 55]
+      # patch_shape: [28, 54, 54]
+      # train stride between patches
+      # stride_shape: [20, 40, 40]
+      stride_shape: [1, 1, 1]
+      # minimum volume of the labels in the patch
+      threshold: 0.0
+      # probability of accepting patches which do not fulfil the threshold criterion
+      slack_acceptance: 0.0
+      # if at least threshold_count pixels present at the patch, then involve the patch in training!
+      threshold_count: 0
+      max_sample_size: null
+      # max_sample_size: 1
+      mcmc_chain_length: 0
+      mcmc_sample_size: 0
+
+    transformer:
+        raw:
+          - name: Standardize
+          - name: ToTensor
+            expand_dims: true
+        label:
+          - name: ToTensor
+            expand_dims: true
